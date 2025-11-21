@@ -11,7 +11,7 @@ const authRoutes = require("./routes/authRoutes");
 const recipeRoutes = require("./routes/recipeRoutes");
 
 const app = express();
-
+//hi
 // MIDDLEWARE
 app.use(cors());
 app.use(express.json());
