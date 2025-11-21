@@ -30,7 +30,7 @@ app.get("/", (req, res) => {
   res.send("🍽️ Recipe Sharing API is running!");
 });
 
-// CONNECT TO MONGODB
+// CONNECT TO MONGODBhtdh
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log("Connected to MongoDB Atlas");
