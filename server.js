@@ -24,7 +24,7 @@ app.use("/auth", authRoutes);
 app.use("/recipes", recipeRoutes);
 
 // SWAGGER
-const swaggerDoc = YAML.load(path.join(__dirname, "public/openapi.yaml"));
+const swaggerDoc = require("./swagger.json");
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 // ROOT
