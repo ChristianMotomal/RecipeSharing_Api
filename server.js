@@ -1,10 +1,9 @@
-require("dotenv").config();
 const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const helmet = require("helmet");
-const morgan = require("morgan");
+const swaggerUi = require("swagger-ui-express");
+const YAML = require("yamljs");
+const path = require("path");
 
+// ... other requires
 const authRoutes = require("./routes/authRoutes");
 const recipeRoutes = require("./routes/recipeRoutes");
 
@@ -25,10 +24,14 @@ app.get("/", (req, res) => {
   res.send("🍽️ Recipe Sharing API is running!");
 });
 
-// CONNECT TO MONGO (but DO NOT listen on port)
+// SWAGGER
+const swaggerDocument = YAML.load(path.join(__dirname, "public/openapi.yaml"));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// CONNECT TO MONGO (serverless-friendly)
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log("Connected to MongoDB Atlas"))
   .catch((err) => console.log(err));
 
-module.exports = app;   // IMPORTANT for Vercel serverless
+module.exports = app;
