@@ -1,9 +1,13 @@
+require("dotenv").config();
 const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const helmet = require("helmet");
+const morgan = require("morgan");
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
 const path = require("path");
 
-// ... other requires
 const authRoutes = require("./routes/authRoutes");
 const recipeRoutes = require("./routes/recipeRoutes");
 
@@ -19,19 +23,31 @@ app.use(morgan("dev"));
 app.use("/auth", authRoutes);
 app.use("/recipes", recipeRoutes);
 
+// SWAGGER
+const swaggerDoc = YAML.load(path.join(__dirname, "public/openapi.yaml"));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+
 // ROOT
 app.get("/", (req, res) => {
   res.send("🍽️ Recipe Sharing API is running!");
 });
 
-// SWAGGER
-const swaggerDocument = YAML.load(path.join(__dirname, "public/openapi.yaml"));
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
 // CONNECT TO MONGO (serverless-friendly)
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log("Connected to MongoDB Atlas"))
-  .catch((err) => console.log(err));
+let cached = global.mongoose;
 
-module.exports = app;
+if (!cached) cached = global.mongoose = { conn: null, promise: null };
+
+async function connectToDatabase(uri) {
+  if (cached.conn) return cached.conn;
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(uri).then((mongoose) => mongoose);
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
+
+// export the app for Vercel
+module.exports = async (req, res) => {
+  await connectToDatabase(process.env.MONGODB_URI);
+  return app(req, res);
+};
