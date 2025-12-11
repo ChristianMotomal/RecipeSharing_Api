@@ -1,0 +1,270 @@
+openapi: 3.0.0
+info:
+  title: Recipe Sharing API
+  version: 1.0.0
+  description: API documentation for a Node.js/Express-based Recipe Sharing platform with JWT Authentication.
+
+servers:
+
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: 
+  - url: 
+    description: Live Vercel Production Server
+  - url: http://localhost:3000/api 
+    description: Local Development Server
+    
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Authentication
+    description: User registration and login
+  - name: Recipes
+    description: CRUD operations for recipes
+
+paths:
+  # ----------------------------------------------------
+  # AUTH ROUTES (Testing: POST /auth/register at POST /auth/login)
+  # ----------------------------------------------------
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUser'
+      responses:
+        '201':
+          description: User registered!
+        '400':
+          description: Invalid input or user already exists
+  
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login an existing user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginUser'
+      responses:
+        '200':
+          description: Successfully logged in, returns JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: The JWT Bearer token for authentication.
+        '400':
+          description: Incorrect password
+        '404':
+          description: User not found
+
+  # ----------------------------------------------------
+  # RECIPE ROUTES (Requires: JWT Token)
+  # ----------------------------------------------------
+  /recipes:
+    get:
+      tags:
+        - Recipes
+      summary: Get all recipes
+      responses:
+        '200':
+          description: A list of recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recipe'
+    post:
+      tags:
+        - Recipes
+      summary: Create a new recipe (requires JWT token)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeInput'
+      responses:
+        '201':
+          description: Recipe created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        '401':
+          description: Unauthorized (missing or invalid token)
+        '400':
+          description: Invalid recipe data
+
+  /recipes/{id}:
+    get:
+      tags:
+        - Recipes
+      summary: Get a recipe by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the recipe to retrieve
+      responses:
+        '200':
+          description: Recipe found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        '404':
+          description: Recipe not found
+        '500':
+          description: Server error (e.g., invalid ID format)
+
+    put:
+      tags:
+        - Recipes
+      summary: Update a recipe by ID (requires JWT token)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the recipe to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeInput'
+      responses:
+        '200':
+          description: Recipe updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        '404':
+          description: Recipe not found
+        '401':
+          description: Unauthorized (missing or invalid token)
+
+    delete:
+      tags:
+        - Recipes
+      summary: Delete a recipe by ID (requires JWT token)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the recipe to delete
+      responses:
+        '200':
+          description: Recipe deleted
+        '404':
+          description: Recipe not found
+        '401':
+          description: Unauthorized (missing or invalid token)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter the JWT token obtained from the login endpoint.
+      
+  schemas:
+    RegisterUser:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          example: chef_juan
+        email:
+          type: string
+          format: email
+          example: juan@example.com
+        password:
+          type: string
+          format: password
+          example: securepassword123
+          
+    LoginUser:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: juan@example.com
+        password:
+          type: string
+          format: password
+          example: securepassword123
+
+    RecipeInput:
+      type: object
+      required:
+        - title
+        - ingredients
+        - instructions
+      properties:
+        title:
+          type: string
+          example: Classic Adobo
+        description:
+          type: string
+          example: A simple and delicious Filipino dish.
+        ingredients:
+          type: array
+          items:
+            type: string
+          example: ["Chicken", "Soy Sauce", "Vinegar", "Garlic"]
+        instructions:
+          type: string
+          example: Marinate chicken, then braise with soy sauce and vinegar until tender.
+
+    Recipe:
+      allOf:
+        - $ref: '#/components/schemas/RecipeInput'
+        - type: object
+          properties:
+            _id:
+              type: string
+              example: 60a4f6d3f3f5a2001c34a8c9
+            userId:
+              type: string
+              example: 60a4f6d3f3f5a2001c34a8c8
+            createdAt:
+              type: string
+              format: date-time
+              example: 2023-12-04T12:00:00.000Z
