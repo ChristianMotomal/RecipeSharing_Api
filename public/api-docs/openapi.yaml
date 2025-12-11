@@ -8,10 +8,9 @@ servers:
 
   # Added by API Auto Mocking Plugin
   - description: SwaggerHub API Auto Mocking
-    url: 
-  - url: 
+    url: https://recipe-sharing-api-three.vercel.app 
     description: Live Vercel Production Server
-  - url: http://localhost:3000/api 
+  - url: http://localhost:3000 
     description: Local Development Server
     
 security:
