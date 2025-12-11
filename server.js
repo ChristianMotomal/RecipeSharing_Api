@@ -17,11 +17,11 @@ app.use(express.json());
 app.use(helmet());
 app.use(morgan("dev"));
 
-// Routes
+// API routes
 app.use("/auth", authRoutes);
 app.use("/recipes", recipeRoutes);
 
-// Serve static files (Swagger HTML & YAML)
+// Serve static Swagger page
 app.use(express.static(path.join(__dirname, "public")));
 
 // Root
@@ -29,12 +29,15 @@ app.get("/", (req, res) => {
   res.send("🍽️ Recipe Sharing API is running!");
 });
 
-// MongoDB connection and start server
+// Connect to MongoDB and start server
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log("Connected to MongoDB Atlas");
-    app.listen(process.env.PORT || 3000, () => {
-      console.log("Server running on port " + (process.env.PORT || 3000));
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
     });
   })
   .catch(err => console.log(err));
+
+module.exports = app; // optional for testing
