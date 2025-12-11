@@ -3,16 +3,11 @@ info:
   title: Recipe Sharing API
   version: 1.0.0
   description: API documentation for a Node.js/Express-based Recipe Sharing platform with JWT Authentication.
-
 servers:
-
-  # Added by API Auto Mocking Plugin
-  - description: SwaggerHub API Auto Mocking
-    url: https://recipe-sharing-api-three.vercel.app 
+  - url: https://recipe-sharing-api-three.vercel.app
     description: Live Vercel Production Server
-  - url: http://localhost:3000 
+  - url: http://localhost:3000
     description: Local Development Server
-    
 security:
   - bearerAuth: []
 
