@@ -21,19 +21,20 @@ app.use(morgan("dev"));
 app.use("/auth", authRoutes);
 app.use("/recipes", recipeRoutes);
 
-// Serve static Swagger page
+// Serve static files (Swagger HTML + YAML)
 app.use(express.static(path.join(__dirname, "public")));
 
+// /api-docs route serves the static Swagger page
 app.get("/api-docs", (req, res) => {
   res.sendFile(path.join(__dirname, "public/index.html"));
 });
 
-// Root
+// Root greeting
 app.get("/", (req, res) => {
   res.send("🍽️ Recipe Sharing API is running!");
 });
 
-// Connect to MongoDB and start server
+// MongoDB connection and start server
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log("Connected to MongoDB Atlas");
@@ -44,4 +45,4 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.log(err));
 
-module.exports = app; // optional for testing
+module.exports = app;
