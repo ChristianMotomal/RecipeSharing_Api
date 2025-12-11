@@ -1,18 +1,245 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Login</title>
-  <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<title>Recipe Sharing</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .container {
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    width: 400px;
+  }
+  h2 { text-align: center; margin-bottom: 20px; }
+  input, textarea, button {
+    width: 100%; padding: 10px; margin: 5px 0; border-radius: 6px; border: 1px solid #ccc;
+  }
+  button {
+    background: #4caf50; color: white; border: none; cursor: pointer;
+  }
+  button:hover { background: #45a049; }
+  .section { display: none; margin-top: 15px; }
+  .visible { display: block; }
+  .recipe { border-bottom: 1px solid #ccc; padding: 5px 0; }
+  .recipe button { width: auto; margin-right: 5px; padding: 5px 10px; background: #2196F3; }
+  .recipe button.delete { background: #f44336; }
+</style>
 </head>
 <body>
-  <h1>Login</h1>
-  <form id="loginForm">
-    <input type="email" id="email" placeholder="Email" required><br>
-    <input type="password" id="password" placeholder="Password" required><br>
-    <button type="submit">Login</button>
-  </form>
-  <p>Don't have an account? <a href="register.html">Register here</a></p>
+<div class="container">
 
-  <script src="js/app.js"></script>
+  <!-- LOGIN -->
+  <div id="login-section" class="section visible">
+    <h2>Login</h2>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <p>Don't have an account? <a href="#" onclick="showSection('register')">Register</a></p>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="register-section" class="section">
+    <h2>Register</h2>
+    <input type="text" id="reg-username" placeholder="Username">
+    <input type="email" id="reg-email" placeholder="Email">
+    <input type="password" id="reg-password" placeholder="Password">
+    <button onclick="register()">Register</button>
+    <p>Already have an account? <a href="#" onclick="showSection('login')">Login</a></p>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard-section" class="section">
+    <h2>Dashboard</h2>
+    
+    <!-- SEARCH -->
+    <input type="text" id="search-input" placeholder="Search recipes..." oninput="renderRecipes()">
+    
+    <!-- CREATE RECIPE -->
+    <h3>Create Recipe</h3>
+    <input type="text" id="new-title" placeholder="Title">
+    <input type="text" id="new-description" placeholder="Description">
+    <textarea id="new-ingredients" placeholder="Ingredients (comma separated)"></textarea>
+    <textarea id="new-instructions" placeholder="Instructions"></textarea>
+    <button onclick="createRecipe()">Add Recipe</button>
+
+    <!-- RECIPES LIST -->
+    <h3>Recipes</h3>
+    <div id="recipes-list"></div>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+</div>
+
+<script>
+let token = localStorage.getItem('token');
+let recipes = [];
+
+// Show the correct section
+function showSection(section) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.getElementById(section + '-section').classList.add('visible');
+}
+
+// Login
+async function login() {
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  const res = await fetch('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify({email, password})
+  });
+  if(res.ok){
+    const data = await res.json();
+    token = data.token;
+    localStorage.setItem('token', token);
+    showSection('dashboard');
+    fetchRecipes();
+  } else {
+    alert('Login failed');
+  }
+}
+
+// Register
+async function register() {
+  const username = document.getElementById('reg-username').value;
+  const email = document.getElementById('reg-email').value;
+  const password = document.getElementById('reg-password').value;
+  const res = await fetch('/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify({username,email,password})
+  });
+  if(res.ok){
+    alert('Registered successfully, please login');
+    showSection('login');
+  } else {
+    alert('Registration failed');
+  }
+}
+
+// Logout
+function logout() {
+  token = null;
+  localStorage.removeItem('token');
+  showSection('login');
+}
+
+// Fetch recipes
+async function fetchRecipes() {
+  const res = await fetch('/recipes', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  if(res.ok){
+    recipes = await res.json();
+    renderRecipes();
+  }
+}
+
+// Render recipes with Update/Delete buttons
+function renderRecipes() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const list = recipes.filter(r => r.title.toLowerCase().includes(search) || (r.description && r.description.toLowerCase().includes(search)));
+  const container = document.getElementById('recipes-list');
+  container.innerHTML = '';
+  list.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'recipe';
+    div.innerHTML = `
+      <strong>${r.title}</strong><p>${r.description || ''}</p>
+      <button onclick="editRecipe('${r._id}')">Edit</button>
+      <button class="delete" onclick="deleteRecipe('${r._id}')">Delete</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// Create recipe
+async function createRecipe() {
+  const title = document.getElementById('new-title').value;
+  const description = document.getElementById('new-description').value;
+  const ingredients = document.getElementById('new-ingredients').value.split(',').map(s => s.trim());
+  const instructions = document.getElementById('new-instructions').value;
+  const res = await fetch('/recipes', {
+    method: 'POST',
+    headers: { 
+      'Content-Type':'application/json',
+      'Authorization':'Bearer ' + token
+    },
+    body: JSON.stringify({title, description, ingredients, instructions})
+  });
+  if(res.ok){
+    alert('Recipe added!');
+    document.getElementById('new-title').value = '';
+    document.getElementById('new-description').value = '';
+    document.getElementById('new-ingredients').value = '';
+    document.getElementById('new-instructions').value = '';
+    fetchRecipes();
+  } else {
+    alert('Failed to add recipe');
+  }
+}
+
+// Delete recipe
+async function deleteRecipe(id) {
+  const res = await fetch('/recipes/' + id, {
+    method: 'DELETE',
+    headers: { 'Authorization':'Bearer ' + token }
+  });
+  if(res.ok){
+    alert('Recipe deleted');
+    fetchRecipes();
+  } else {
+    alert('Failed to delete');
+  }
+}
+
+// Edit recipe
+async function editRecipe(id) {
+  const recipe = recipes.find(r => r._id === id);
+  const newTitle = prompt('Edit title', recipe.title);
+  const newDescription = prompt('Edit description', recipe.description || '');
+  const newIngredients = prompt('Edit ingredients (comma separated)', recipe.ingredients.join(', '));
+  const newInstructions = prompt('Edit instructions', recipe.instructions);
+  if(!newTitle) return;
+
+  const res = await fetch('/recipes/' + id, {
+    method: 'PUT',
+    headers: {
+      'Content-Type':'application/json',
+      'Authorization':'Bearer ' + token
+    },
+    body: JSON.stringify({
+      title: newTitle,
+      description: newDescription,
+      ingredients: newIngredients.split(',').map(s => s.trim()),
+      instructions: newInstructions
+    })
+  });
+  if(res.ok){
+    alert('Recipe updated');
+    fetchRecipes();
+  } else {
+    alert('Failed to update');
+  }
+}
+
+// On load
+if(token){
+  showSection('dashboard');
+  fetchRecipes();
+} else {
+  showSection('login');
+}
+</script>
 </body>
 </html>
