@@ -24,8 +24,6 @@ app.use("/recipes", recipeRoutes);
 // Serve static Swagger page
 app.use(express.static(path.join(__dirname, "public")));
 
-const path = require("path");
-
 app.get("/api-docs", (req, res) => {
   res.sendFile(path.join(__dirname, "public/index.html"));
 });
